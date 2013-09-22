@@ -5,8 +5,8 @@
 -- Stability   : stable
 -- Portability : Good
 --
--- Simple implementation of the RC5 variable size block cipher.
--- http://en.wikipedia.org/wiki/RC5
+-- Pure implementation of the RC5 variable size block cipher.
+-- <http://en.wikipedia.org/wiki/RC5>
 --
 -- You need to select a block size and number of rounds.
 -- If you are unsure, the most common settings are 64bit blocks with 12 rounds.
@@ -18,7 +18,7 @@
 -- this cipher's option of short block lengths makes it useful for encrypting 
 -- small data such as database primary keys before display.
 --
--- RC5 has withstood the tests of time remarkably well.
+-- Introduced in 1994, RC5 has withstood the tests of time remarkably well.
 --
 
 module Crypto.Cipher.RC5 (encrypt,decrypt) where
@@ -31,11 +31,24 @@ import Data.List.Split (chunksOf)
 
 -- | RC5 encryption
 --
--- blocksize 16, 32, 64, 128, rounds 0 - 256
+-- Using the given blocksize, number of rounds and key, encrypts the plaintext.
+--
+-- * Valid blocksizes are 16, 32, 64, 128
+--
+-- * Valid rounds are 0 - 256
+--
 -- If in doubt, 32bit blocks and 12 rounds is the most common combination
+--
+-- >encrypt 32 12 [1,2,3,4] [0xFE,0x13,0x37,0x00]
+-- 
+-- Encrypts the plaintext (last) with a blocksize of 32 bits, 12 rounds and key @[1,2,3,4]@
+-- 
 -- Maximum key length is 256. A common (and sufficient) length is 16 bytes.
-encrypt :: Int -> [Word8] -> Int -> [Word8] -> [Word8]
-encrypt blocksize key rounds plain
+-- The length of the result is divisible by the block size (i.e. 2, 4, 8, 16)
+-- On invalid input, the empty list is returned.
+
+encrypt :: Int -> Int -> [Word8] -> [Word8] -> [Word8]
+encrypt blocksize rounds key plain
   | length key > 256 || null key || null plain || rounds > 256 || rounds < 0 = []
   | blocksize == 16 = crypt8 encryptblock8 key rounds plain
   | blocksize == 32 = crypt16 encryptblock16 key rounds plain
@@ -46,16 +59,16 @@ encrypt blocksize key rounds plain
 -- | RC5 decryption
 --
 -- All parameters must match those used for encryption
-decrypt :: Int -> [Word8] -> Int -> [Word8] -> [Word8]
-decrypt blocksize key rounds cipher
+-- The length of the result is equal to the length of the input
+
+decrypt :: Int -> Int -> [Word8] -> [Word8] -> [Word8]
+decrypt blocksize rounds key cipher
   | length key > 256 || null key || null cipher || rounds > 256 || rounds < 0 = []
   | blocksize == 16 = crypt8 decryptblock8 key rounds cipher
   | blocksize == 32 = crypt16 decryptblock16 key rounds cipher
   | blocksize == 64 = crypt32 decryptblock32 key rounds cipher
   | blocksize == 128 = crypt64 decryptblock64 key rounds cipher
   | otherwise = []
-
-
 
 --Blocksize 16bit/2B, wordsize Word8
 ws8_w  = 8   :: Int  -- W
